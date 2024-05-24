@@ -1,54 +1,113 @@
 #include "Player.h"
+#include "Scene.h"
+
+Player::~Player()
+{
+    for (int i = 0; i < bullets.size(); i++)
+    {
+        delete bullets[i];
+    }
+    bullets.clear();
+}
 
 void Player::start()
 {
-	// load texture
-	texture = loadTexture("gfx/player.png");
+    // load texture
+    texture = loadTexture("gfx/player.png");
 
-	//initialize 
-	x = 100;
-	y = 100;
-	width = 0;
-	height = 0;
+    // initialize
+    x = 100;
+    y = 100;
+    width = 0;
+    height = 0;
+    reloadTime = 8;
+    currentReloadTime = 0;
+    wingtipReloadTime = 16;
+    currentWingtipReloadTime = 0;
 
-	// query(?) the texture to set our width and height
-	SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+    // query the texture to set our width and height
+    SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+
+    sound = SoundManager::loadSound("sound/334227__jradcoolness__laser.ogg");
 }
 
 void Player::update()
 {
-	if (app.keyboard[SDL_SCANCODE_W])
-	{
-		y -= speed;
-	}
+    if (app.keyboard[SDL_SCANCODE_W])
+    {
+        y -= speed;
+    }
 
-	if (app.keyboard[SDL_SCANCODE_S])
-	{;
-		y += speed;
-	}
+    if (app.keyboard[SDL_SCANCODE_S])
+    {
+        y += speed;
+    }
 
-	if (app.keyboard[SDL_SCANCODE_A])
-	{
-		x -= speed;
-	}
+    if (app.keyboard[SDL_SCANCODE_A])
+    {
+        x -= speed;
+    }
 
-	if (app.keyboard[SDL_SCANCODE_D])
-	{
-		x += speed;
-	}
+    if (app.keyboard[SDL_SCANCODE_D])
+    {
+        x += speed;
+    }
 
-	if (app.keyboard[SDL_SCANCODE_LSHIFT])
-	{
-		speed = 5;
-	}
+    if (app.keyboard[SDL_SCANCODE_LSHIFT])
+    {
+        speed = 5;
+    }
 
-	if (app.keyboard[SDL_SCANCODE_BACKSPACE])
-	{
-		speed = 2;
-	}
+    if (app.keyboard[SDL_SCANCODE_BACKSPACE])
+    {
+        speed = 2;
+    }
+
+    if (currentReloadTime > 0)
+        currentReloadTime--;
+
+    if (currentWingtipReloadTime > 0)
+        currentWingtipReloadTime--;
+
+    if (app.keyboard[SDL_SCANCODE_F] && currentReloadTime == 0)
+    {
+        SoundManager::playSound(sound);
+        Bullet* bullet = new Bullet(x + width, y - 2 + height / 2, 1, 0, 10);
+        bullets.push_back(bullet);
+        getScene()->addGameObject(bullet);
+        bullet->start();
+
+        currentReloadTime = reloadTime;
+    }
+
+    if (app.keyboard[SDL_SCANCODE_G] && currentWingtipReloadTime == 0)
+    {
+        SoundManager::playSound(sound);
+        Bullet* bulletLeft = new Bullet(x + width, y - 2, 1, 0, 10);
+        Bullet* bulletRight = new Bullet(x + width, y + height - 2, 1, 0, 10);
+        bullets.push_back(bulletLeft);
+        bullets.push_back(bulletRight);
+        getScene()->addGameObject(bulletLeft);
+        getScene()->addGameObject(bulletRight);
+        bulletLeft->start();
+        bulletRight->start();
+
+        currentWingtipReloadTime = wingtipReloadTime;
+    }
+
+    for (int i = 0; i < bullets.size(); i++)
+    {
+        if (bullets[i]->getPositionX() > SCREEN_WIDTH)
+        {
+            Bullet* bulletToErase = bullets[i];
+            bullets.erase(bullets.begin() + i);
+            delete bulletToErase;
+            i--;
+        }
+    }
 }
 
 void Player::draw()
 {
-	blit(texture, x, y);
+    blit(texture, x, y);
 }
