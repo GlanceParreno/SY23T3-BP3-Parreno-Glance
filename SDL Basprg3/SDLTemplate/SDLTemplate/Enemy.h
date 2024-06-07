@@ -18,7 +18,11 @@ public:
     void draw();
     void setPlayerTarget(Player* player);
     void setPosition(int xPos, int yPos);
-    int getPositionX() const { return x; }
+
+    int getPositionX();
+    int getPositionY();
+    int getWidth();
+    int getHeight();
 private:
     SDL_Texture* texture;
     Mix_Chunk* sound;
@@ -32,6 +36,8 @@ private:
     int speed;
     float reloadTime;
     float currentReloadTime;
+    float wingtipReloadTime;
+    float currentWingtipReloadTime;
     float directionChangeTime;
     float currentDirectionChangeTime;
     std::vector<Bullet*> bullets;

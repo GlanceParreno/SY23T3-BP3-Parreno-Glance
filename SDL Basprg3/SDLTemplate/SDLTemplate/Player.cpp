@@ -24,6 +24,7 @@ void Player::start()
     currentReloadTime = 0;
     wingtipReloadTime = 16;
     currentWingtipReloadTime = 0;
+    isAlive = true;
 
     // query the texture to set our width and height
     SDL_QueryTexture(texture, NULL, NULL, &width, &height);
@@ -33,6 +34,20 @@ void Player::start()
 
 void Player::update()
 {
+    // Memory management for bullets
+    for (int i = 0; i < bullets.size(); i++)
+    {
+        if (bullets[i]->getPositionX() > SCREEN_WIDTH)
+        {
+            Bullet* bulletToErase = bullets[i];
+            bullets.erase(bullets.begin() + i);
+            delete bulletToErase;
+            i--;
+        }
+    }
+
+    if (!isAlive) return;
+
     if (app.keyboard[SDL_SCANCODE_W])
     {
         y -= speed;
@@ -72,10 +87,9 @@ void Player::update()
     if (app.keyboard[SDL_SCANCODE_F] && currentReloadTime == 0)
     {
         SoundManager::playSound(sound);
-        Bullet* bullet = new Bullet(x + width, y - 2 + height / 2, 1, 0, 10);
+        Bullet* bullet = new Bullet(x + width, y - 2 + height / 2, 1, 0, 10, Side::PLAYER_SIDE);
         bullets.push_back(bullet);
         getScene()->addGameObject(bullet);
-       
 
         currentReloadTime = reloadTime;
     }
@@ -83,8 +97,8 @@ void Player::update()
     if (app.keyboard[SDL_SCANCODE_G] && currentWingtipReloadTime == 0)
     {
         SoundManager::playSound(sound);
-        Bullet* bulletLeft = new Bullet(x + width, y - 2, 1, 0, 10);
-        Bullet* bulletRight = new Bullet(x + width, y + height - 2, 1, 0, 10);
+        Bullet* bulletLeft = new Bullet(x + width, y - 2, 1, 0, 10, Side::PLAYER_SIDE);
+        Bullet* bulletRight = new Bullet(x + width, y + height - 2, 1, 0, 10, Side::PLAYER_SIDE);
         bullets.push_back(bulletLeft);
         bullets.push_back(bulletRight);
         getScene()->addGameObject(bulletLeft);
@@ -94,21 +108,12 @@ void Player::update()
 
         currentWingtipReloadTime = wingtipReloadTime;
     }
-
-    for (int i = 0; i < bullets.size(); i++)
-    {
-        if (bullets[i]->getPositionX() > SCREEN_WIDTH)
-        {
-            Bullet* bulletToErase = bullets[i];
-            bullets.erase(bullets.begin() + i);
-            delete bulletToErase;
-            i--;
-        }
-    }
 }
 
 void Player::draw()
 {
+    if (!isAlive) return;
+
     blit(texture, x, y);
 }
 
@@ -120,4 +125,24 @@ int Player::getPositionX()
 int Player::getPositionY()
 {
     return y;
+}
+
+int Player::getWidth()
+{
+    return width;
+}
+
+int Player::getHeight()
+{
+    return height;
+}
+
+bool Player::getIsAlive()
+{
+    return isAlive;
+}
+
+void Player::doDeath()
+{
+    isAlive = false;
 }

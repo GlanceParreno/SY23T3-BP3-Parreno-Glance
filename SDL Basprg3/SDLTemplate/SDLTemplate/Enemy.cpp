@@ -22,13 +22,14 @@ void Enemy::start()
     speed = 2;
     reloadTime = 60;
     currentReloadTime = 0;
-    directionChangeTime = (rand() % 300) + 180; //direction  change time of 3-8 sec
+    directionChangeTime = (rand() % 300) + 180; // direction change time of 3-8 sec
     currentDirectionChangeTime = 0;
 
     // query the texture to set our width and height
     SDL_QueryTexture(texture, NULL, NULL, &width, &height);
 
     sound = SoundManager::loadSound("sound/334227__jradcoolness__laser.ogg");
+    sound->volume = 64;
 }
 
 void Enemy::update()
@@ -56,13 +57,13 @@ void Enemy::update()
         calcSlope(playerTarget->getPositionX(), playerTarget->getPositionY(), x, y, &dx, &dy);
 
         SoundManager::playSound(sound);
-        Bullet* bullet = new Bullet(x + width, y - 2 + height / 2, dx, dy, 10);
+        Bullet* bullet = new Bullet(x + width, y - 2 + height / 2, dx, dy, 10, Side::ENEMY_SIDE);
         bullets.push_back(bullet);
         getScene()->addGameObject(bullet);
 
-
         currentReloadTime = reloadTime;
     }
+
     for (int i = 0; i < bullets.size(); i++)
     {
         if (bullets[i]->getPositionX() < 0)
@@ -89,4 +90,24 @@ void Enemy::setPosition(int xPos, int yPos)
 {
     this->x = xPos;
     this->y = yPos;
+}
+
+int Enemy::getPositionX()
+{
+    return x;
+}
+
+int Enemy::getPositionY()
+{
+    return y;
+}
+
+int Enemy::getWidth()
+{
+    return width;
+}
+
+int Enemy::getHeight()
+{
+    return height;
 }
