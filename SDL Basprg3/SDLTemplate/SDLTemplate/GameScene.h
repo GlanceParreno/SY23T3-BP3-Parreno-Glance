@@ -1,44 +1,42 @@
 #pragma once
+
 #include "Scene.h"
 #include "GameObject.h"
 #include "Player.h"
 #include "Enemy.h"
+#include "PowerUp.h" // Include PowerUp header
 #include <vector>
 #include "text.h"
-
-
-using namespace std;
 
 class GameScene : public Scene
 {
 public:
     GameScene();
     ~GameScene();
-    void start();
-    void draw();
-    void update();
+    void start() override;
+    void draw() override;
+    void update() override;
+
 private:
     SDL_Texture* texture;
     Player* player;
-    Enemy* enemy;
     SDL_Texture* explosionTexture;
     bool isExplosionActive;
     int explosionX;
     int explosionY;
     int explosionDuration;
 
-    // Spawner
     float spawnTime;
     float currentSpawnTimer;
-    vector<Enemy*> spawnedEnemies;
+    std::vector<Enemy*> spawnedEnemies;
+    std::vector<PowerUp*> spawnedPowerUps; // Vector to store spawned power-ups
+    int points;
 
     void spawn();
-
-
+    void spawnPowerUp(); // Function to spawn power-ups
     void doSpawnLogic();
     void doCollisionLogic();
     void despawnEnemy(Enemy* enemy);
-
-    int points;
-
+    void despawnPowerUp(PowerUp* powerUp); // Function to despawn power-ups
 };
+

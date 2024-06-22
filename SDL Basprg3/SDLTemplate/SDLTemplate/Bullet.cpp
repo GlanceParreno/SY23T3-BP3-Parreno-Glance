@@ -35,7 +35,19 @@ void Bullet::update()
 
 void Bullet::draw()
 {
-    blit(texture, x, y);
+    // Calculate rotation angle in degrees
+    double angle = 270.0; // 270 degrees clockwise
+
+    // Calculate the center of rotation (assuming the texture's center)
+    int centerX = width / 2;
+    int centerY = height / 2;
+
+    // Set the rotation point
+    SDL_Point pivot = { centerX, centerY };
+
+    // Render the rotated texture
+    SDL_Rect rect = { static_cast<int>(x), static_cast<int>(y), width, height };
+    SDL_RenderCopyEx(app.renderer, texture, NULL, &rect, angle, &pivot, SDL_FLIP_NONE);
 }
 
 int Bullet::getPositionX()

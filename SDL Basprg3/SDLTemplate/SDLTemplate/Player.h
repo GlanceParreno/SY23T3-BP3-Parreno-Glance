@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameObject.h"
 #include "common.h"
 #include "draw.h"
@@ -10,9 +11,9 @@ class Player : public GameObject
 {
 public:
     ~Player();
-    void start();
-    void update();
-    void draw();
+    void start() override;
+    void update() override;
+    void draw() override;
 
     int getPositionX();
     int getPositionY();
@@ -20,6 +21,8 @@ public:
     int getHeight();
     bool getIsAlive();
     void doDeath();
+    void upgradeFiringPattern();
+
 private:
     SDL_Texture* texture;
     Mix_Chunk* sound;
@@ -27,11 +30,12 @@ private:
     int y;
     int width;
     int height;
-    int speed = 2;
+    int speed = 5; // Increase speed for vertical movement
     float reloadTime;
     float currentReloadTime;
     float wingtipReloadTime;
     float currentWingtipReloadTime;
     std::vector<Bullet*> bullets;
     bool isAlive;
+    int firingPatternLevel;
 };

@@ -1,13 +1,10 @@
 #include "GameScene.h"
 #include <SDL.h>
 
-
 GameScene::GameScene()
 {
-    // Register and add game objects in constructor
     player = new Player();
     this->addGameObject(player);
-
     points = 0;
 }
 
@@ -19,6 +16,12 @@ GameScene::~GameScene()
         delete enemy;
     }
     spawnedEnemies.clear();
+
+    for (auto powerUp : spawnedPowerUps)
+    {
+        delete powerUp;
+    }
+    spawnedPowerUps.clear();
 }
 
 void GameScene::start()
@@ -26,7 +29,6 @@ void GameScene::start()
     Scene::start();
     texture = loadTexture("gfx/background.png");
     explosionTexture = loadTexture("gfx/Bang.png");
-    // Initialize any scene logic here
     initFonts();
     currentSpawnTimer = 300;
     spawnTime = 300;
@@ -39,23 +41,18 @@ void GameScene::start()
 
 void GameScene::draw()
 {
-    // Calculate the destination rectangle to cover the entire screen
     SDL_Rect destRect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-
-    // Render the background texture
     SDL_RenderCopy(app.renderer, texture, NULL, &destRect);
     Scene::draw();
 
-    // Draw explosion if active
     if (isExplosionActive)
     {
-        // Blit explosion sprite at explosion position
         blit(explosionTexture, explosionX, explosionY);
     }
 
     drawText(110, 20, 255, 255, 255, TEXT_CENTER, "POINTS: %03d", points);
 
-    if (player->getIsAlive() == false)
+    if (!player->getIsAlive())
     {
         drawText(SCREEN_WIDTH / 2, 600, 255, 255, 255, TEXT_CENTER, "GAME IS OVER!");
     }
@@ -70,7 +67,7 @@ void GameScene::update()
         if (explosionDuration <= 0)
         {
             // Deactivate explosion
-            isExplosionActive = true;
+            isExplosionActive = false;
         }
     }
     Scene::update();
@@ -78,79 +75,6 @@ void GameScene::update()
     doCollisionLogic();
 }
 
-void GameScene::doSpawnLogic()
-{
-    if (currentSpawnTimer > 0)
-        currentSpawnTimer--;
-
-    if (currentSpawnTimer <= 0)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            spawn();
-        }
-        currentSpawnTimer = spawnTime;
-    }
-
-    // Memory management for enemies
-    for (int i = 0; i < spawnedEnemies.size(); i++)
-    {
-        if (spawnedEnemies[i]->getPositionX() < 0)
-        {
-            despawnEnemy(spawnedEnemies[i]);
-            i--;
-        }
-    }
-}
-
-void GameScene::doCollisionLogic()
-{
-    for (int i = 0; i < objects.size(); i++)
-    {
-        Bullet* bullet = dynamic_cast<Bullet*>(objects[i]);
-
-        if (bullet != NULL)
-        {
-            if (bullet->getSide() == Side::ENEMY_SIDE)
-            {
-                int collision = checkCollision(player->getPositionX(), player->getPositionY(), player->getWidth(), player->getHeight(),
-                    bullet->getPositionX(), bullet->getPositionY(), bullet->getWidth(), bullet->getHeight());
-
-                if (collision == 1)
-                {
-                    // Player is hit by an enemy bullet
-                    player->doDeath();
-                    break;
-                }
-            }
-            else if (bullet->getSide() == Side::PLAYER_SIDE)
-            {
-                for (int j = 0; j < spawnedEnemies.size(); j++)
-                {
-                    Enemy* currentEnemy = spawnedEnemies[j];
-
-                    int collision = checkCollision(currentEnemy->getPositionX(), currentEnemy->getPositionY(), currentEnemy->getWidth(), currentEnemy->getHeight(),
-                        bullet->getPositionX(), bullet->getPositionY(), bullet->getWidth(), bullet->getHeight());
-
-                    if (collision == 1)
-                    {
-                        // Enemy is hit by a player bullet
-                        despawnEnemy(currentEnemy);
-
-                        // Activate explosion at enemy's position
-                        isExplosionActive = true;
-                        explosionX = currentEnemy->getPositionX();
-                        explosionY = currentEnemy->getPositionY();
-                        explosionDuration = 60; // Adjust the duration as needed
-
-                        points++;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-}
 
 void GameScene::spawn()
 {
@@ -158,10 +82,30 @@ void GameScene::spawn()
     this->addGameObject(enemy);
     enemy->setPlayerTarget(player);
 
-    enemy->setPosition(SCREEN_WIDTH + 100, 300 + (rand() % 300)); // Spawning beyond the right side of the screen
+    // Set enemy position just above the top of the screen
+    int spawnX = rand() % (SCREEN_WIDTH - enemy->getWidth()); // Random X position within screen width
+    int spawnY = -enemy->getHeight(); // Spawn just above the top of the screen
+    enemy->setPosition(spawnX, spawnY);
+
     spawnedEnemies.push_back(enemy);
     currentSpawnTimer = spawnTime;
 }
+
+void GameScene::spawnPowerUp()
+{
+    PowerUp* powerUp = new PowerUp();
+    this->addGameObject(powerUp);
+    powerUp->start();
+
+    // Randomize X position within the screen width for power-up
+    int spawnX = rand() % (SCREEN_WIDTH - powerUp->getWidth());
+    int spawnY = -powerUp->getHeight(); // Spawn just above the top of the screen
+    powerUp->setPosition(spawnX, spawnY);
+
+    spawnedPowerUps.push_back(powerUp);
+}
+
+
 
 void GameScene::despawnEnemy(Enemy* enemy)
 {
@@ -178,5 +122,123 @@ void GameScene::despawnEnemy(Enemy* enemy)
     {
         spawnedEnemies.erase(spawnedEnemies.begin() + index);
         delete enemy;
+    }
+}
+
+void GameScene::despawnPowerUp(PowerUp* powerUp)
+{
+    int index = -1;
+    for (int i = 0; i < spawnedPowerUps.size(); i++)
+    {
+        if (powerUp == spawnedPowerUps[i])
+        {
+            index = i;
+            break;
+        }
+    }
+    if (index != -1)
+    {
+        spawnedPowerUps.erase(spawnedPowerUps.begin() + index);
+        delete powerUp;
+    }
+}
+
+void GameScene::doSpawnLogic()
+{
+    if (currentSpawnTimer > 0)
+        currentSpawnTimer--;
+
+    if (currentSpawnTimer <= 0)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            spawn();
+        }
+        currentSpawnTimer = spawnTime;
+    }
+
+    if (rand() % 500 == 0)
+    {
+        spawnPowerUp();
+    }
+
+    // Memory management for enemies
+    for (int i = 0; i < spawnedEnemies.size(); i++)
+    {
+        if (spawnedEnemies[i]->getPositionX() < 0)
+        {
+            despawnEnemy(spawnedEnemies[i]);
+            i--;
+        }
+    }
+
+    for (int i = 0; i < spawnedPowerUps.size(); i++)
+    {
+        if (spawnedPowerUps[i]->getPositionX() < 0)
+        {
+            despawnPowerUp(spawnedPowerUps[i]);
+            i--;
+        }
+    }
+}
+
+void GameScene::doCollisionLogic()
+{
+
+    // Collision logic between player and power-ups
+    for (int i = 0; i < spawnedPowerUps.size(); i++)
+    {
+        PowerUp* powerUp = spawnedPowerUps[i];
+
+        if (powerUp->checkCollision(player->getPositionX(), player->getPositionY(),
+            player->getWidth(), player->getHeight()))
+        {
+            // Handle power-up collection here
+            despawnPowerUp(powerUp);
+            points += 10;
+            break;
+        }
+    }
+
+    for (int i = 0; i < objects.size(); i++)
+    {
+        Bullet* bullet = dynamic_cast<Bullet*>(objects[i]);
+
+        if (bullet != NULL)
+        {
+            if (bullet->getSide() == Side::ENEMY_SIDE)
+            {
+                int collision = checkCollision(player->getPositionX(), player->getPositionY(), player->getWidth(), player->getHeight(),
+                    bullet->getPositionX(), bullet->getPositionY(), bullet->getWidth(), bullet->getHeight());
+
+                if (collision == 1)
+                {
+                    player->doDeath();
+                    break;
+                }
+            }
+            else if (bullet->getSide() == Side::PLAYER_SIDE)
+            {
+                for (int j = 0; j < spawnedEnemies.size(); j++)
+                {
+                    Enemy* currentEnemy = spawnedEnemies[j];
+
+                    int collision = checkCollision(currentEnemy->getPositionX(), currentEnemy->getPositionY(), currentEnemy->getWidth(), currentEnemy->getHeight(),
+                        bullet->getPositionX(), bullet->getPositionY(), bullet->getWidth(), bullet->getHeight());
+
+                    if (collision == 1)
+                    {
+                        despawnEnemy(currentEnemy);
+                        isExplosionActive = true;
+                        explosionX = currentEnemy->getPositionX();
+                        explosionY = currentEnemy->getPositionY();
+                        explosionDuration = 60; 
+
+                        points++;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

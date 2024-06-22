@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GameObject.h"
 #include "common.h"
 #include "draw.h"
@@ -13,14 +14,15 @@ class Bullet : public GameObject
 {
 public:
     Bullet(float positionX, float positionY, float directionX, float directionY, float speed, Side side);
-    void start();
-    void update();
-    void draw();
+    void start() override;
+    void update() override;
+    void draw() override;
     int getPositionX();
     int getPositionY();
     int getWidth();
     int getHeight();
     Side getSide();
+
 private:
     SDL_Texture* texture;
     Side side;

@@ -11,12 +11,9 @@ Enemy::~Enemy()
 
 void Enemy::start()
 {
-    // load texture
     texture = loadTexture("gfx/enemy.png");
-
-    // initialize
-    directionX = -1;
-    directionY = 1;
+    directionX = 0; // Set directionX to 0 to stop horizontal movement
+    directionY = 1; // Set directionY to 1 to move downwards
     width = 0;
     height = 0;
     speed = 2;
@@ -25,24 +22,20 @@ void Enemy::start()
     directionChangeTime = (rand() % 300) + 180; // direction change time of 3-8 sec
     currentDirectionChangeTime = 0;
 
-    // query the texture to set our width and height
     SDL_QueryTexture(texture, NULL, NULL, &width, &height);
-
     sound = SoundManager::loadSound("sound/334227__jradcoolness__laser.ogg");
-    sound->volume = 64;
 }
 
 void Enemy::update()
 {
-    x += directionX * speed;
-    y += directionY * speed;
+    y += directionY * speed; // Vertical movement (moving downwards)
 
     if (currentDirectionChangeTime > 0)
         currentDirectionChangeTime--;
 
     if (currentDirectionChangeTime == 0)
     {
-        directionY = -directionY;
+        directionY = 1; // Ensure enemies only move downward
         currentDirectionChangeTime = directionChangeTime;
     }
 
@@ -64,6 +57,14 @@ void Enemy::update()
         currentReloadTime = reloadTime;
     }
 
+    // Check if enemy moves off the bottom of the screen
+    if (y > SCREEN_HEIGHT)
+    {
+        // Handle despawning or resetting position if needed
+        y = -height - 10; // Reset above the top of the screen
+    }
+
+    // Manage bullet memory
     for (int i = 0; i < bullets.size(); i++)
     {
         if (bullets[i]->getPositionX() < 0)
@@ -78,7 +79,8 @@ void Enemy::update()
 
 void Enemy::draw()
 {
-    blit(texture, x, y);
+    SDL_Rect rect = { x, y, width, height };
+    SDL_RenderCopyEx(app.renderer, texture, NULL, &rect, 270, NULL, SDL_FLIP_NONE); 
 }
 
 void Enemy::setPlayerTarget(Player* player)
@@ -88,8 +90,8 @@ void Enemy::setPlayerTarget(Player* player)
 
 void Enemy::setPosition(int xPos, int yPos)
 {
-    this->x = xPos;
-    this->y = yPos;
+    x = xPos;
+    y = yPos;
 }
 
 int Enemy::getPositionX()
