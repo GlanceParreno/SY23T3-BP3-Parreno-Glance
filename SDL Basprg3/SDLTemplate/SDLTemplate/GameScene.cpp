@@ -6,6 +6,9 @@ GameScene::GameScene()
     player = new Player();
     this->addGameObject(player);
     points = 0;
+    nextBossSpawnScore = 3; // Initialize next boss spawn score
+    activeBoss = nullptr; // No active boss at the start
+
 }
 
 GameScene::~GameScene()
@@ -20,6 +23,10 @@ GameScene::~GameScene()
     for (auto powerUp : spawnedPowerUps)
     {
         delete powerUp;
+    }
+    if (activeBoss)
+    {
+        delete activeBoss;
     }
     spawnedPowerUps.clear();
 }
@@ -70,11 +77,17 @@ void GameScene::update()
             isExplosionActive = false;
         }
     }
+
     Scene::update();
     doSpawnLogic();
     doCollisionLogic();
-}
 
+    // Check if player score is a multiple of 3 to spawn boss
+    if (points > 0 && points % 3 == 0 && activeBoss == nullptr)
+    {
+        spawnBoss();
+    }
+}
 
 void GameScene::spawn()
 {
@@ -91,6 +104,17 @@ void GameScene::spawn()
     currentSpawnTimer = spawnTime;
 }
 
+void GameScene::spawnBoss()
+{
+    activeBoss = new Boss();
+    this->addGameObject(activeBoss);
+    activeBoss->setPlayerTarget(player);
+
+    int spawnX = rand() % (SCREEN_WIDTH - activeBoss->getWidth());
+    int spawnY = -activeBoss->getHeight();
+    activeBoss->setPosition(spawnX, spawnY);
+}
+
 void GameScene::spawnPowerUp()
 {
     PowerUp* powerUp = new PowerUp();
@@ -104,8 +128,6 @@ void GameScene::spawnPowerUp()
 
     spawnedPowerUps.push_back(powerUp);
 }
-
-
 
 void GameScene::despawnEnemy(Enemy* enemy)
 {
@@ -122,6 +144,15 @@ void GameScene::despawnEnemy(Enemy* enemy)
     {
         spawnedEnemies.erase(spawnedEnemies.begin() + index);
         delete enemy;
+    }
+}
+
+void GameScene::despawnBoss()
+{
+    if (activeBoss != nullptr)
+    {
+        delete activeBoss;
+        activeBoss = nullptr;
     }
 }
 
@@ -148,7 +179,7 @@ void GameScene::doSpawnLogic()
     if (currentSpawnTimer > 0)
         currentSpawnTimer--;
 
-    if (currentSpawnTimer <= 0)
+    if (currentSpawnTimer <= 0 && activeBoss == nullptr) // Only spawn enemies if no boss is active
     {
         for (int i = 0; i < 3; i++)
         {
@@ -157,12 +188,6 @@ void GameScene::doSpawnLogic()
         currentSpawnTimer = spawnTime;
     }
 
-    if (rand() % 500 == 0)
-    {
-        spawnPowerUp();
-    }
-
-    // Memory management for enemies
     for (int i = 0; i < spawnedEnemies.size(); i++)
     {
         if (spawnedEnemies[i]->getPositionX() < 0)
@@ -180,11 +205,15 @@ void GameScene::doSpawnLogic()
             i--;
         }
     }
+
+    if (activeBoss != nullptr && activeBoss->getPositionX() < 0)
+    {
+        despawnBoss();
+    }
 }
 
 void GameScene::doCollisionLogic()
 {
-
     // Collision logic between player and power-ups
     for (int i = 0; i < spawnedPowerUps.size(); i++)
     {
@@ -219,22 +248,45 @@ void GameScene::doCollisionLogic()
             }
             else if (bullet->getSide() == Side::PLAYER_SIDE)
             {
+                // Check collision with enemies (including boss)
                 for (int j = 0; j < spawnedEnemies.size(); j++)
                 {
-                    Enemy* currentEnemy = spawnedEnemies[j];
+                    Enemy* enemy = spawnedEnemies[j];
 
-                    int collision = checkCollision(currentEnemy->getPositionX(), currentEnemy->getPositionY(), currentEnemy->getWidth(), currentEnemy->getHeight(),
-                        bullet->getPositionX(), bullet->getPositionY(), bullet->getWidth(), bullet->getHeight());
+                    int collision = checkCollision(enemy->getPositionX(), enemy->getPositionY(),
+                        enemy->getWidth(), enemy->getHeight(),
+                        bullet->getPositionX(), bullet->getPositionY(),
+                        bullet->getWidth(), bullet->getHeight());
 
                     if (collision == 1)
                     {
-                        despawnEnemy(currentEnemy);
+                        despawnEnemy(enemy);
                         isExplosionActive = true;
-                        explosionX = currentEnemy->getPositionX();
-                        explosionY = currentEnemy->getPositionY();
-                        explosionDuration = 60; 
+                        explosionX = enemy->getPositionX();
+                        explosionY = enemy->getPositionY();
+                        explosionDuration = 60;
 
                         points++;
+                        break;
+                    }
+                }
+
+                // Check collision with active boss
+                if (activeBoss != nullptr)
+                {
+                    int collision = checkCollision(activeBoss->getPositionX(), activeBoss->getPositionY(),
+                        activeBoss->getWidth(), activeBoss->getHeight(),
+                        bullet->getPositionX(), bullet->getPositionY(),
+                        bullet->getWidth(), bullet->getHeight());
+
+                    if (collision == 1)
+                    {
+                        despawnBoss();
+                        isExplosionActive = true;
+                        explosionX = activeBoss->getPositionX();
+                        explosionY = activeBoss->getPositionY();
+                        explosionDuration = 60;
+                        points += 10;
                         break;
                     }
                 }

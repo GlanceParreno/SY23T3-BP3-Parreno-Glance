@@ -83,7 +83,7 @@ void Player::update()
     if (app.keyboard[SDL_SCANCODE_F] && currentReloadTime == 0)
     {
         SoundManager::playSound(sound);
-        Bullet* bullet = new Bullet(x - 2 + width / 2, y - height, 0, -1, 10, Side::PLAYER_SIDE); // Adjust bullet position and direction
+        Bullet* bullet = new Bullet(x - 2 + width / 2 , y - height, 0, -1, 10, Side::PLAYER_SIDE); // Adjust bullet position and direction
         bullets.push_back(bullet);
         getScene()->addGameObject(bullet);
 

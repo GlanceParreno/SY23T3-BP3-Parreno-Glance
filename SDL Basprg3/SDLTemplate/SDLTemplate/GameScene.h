@@ -4,7 +4,8 @@
 #include "GameObject.h"
 #include "Player.h"
 #include "Enemy.h"
-#include "PowerUp.h" // Include PowerUp header
+#include "Boss.h"
+#include "PowerUp.h"
 #include <vector>
 #include "text.h"
 
@@ -28,15 +29,21 @@ private:
 
     float spawnTime;
     float currentSpawnTimer;
+    float bossSpawnInterval; // Added declaration for boss spawn interval
+    float currentBossSpawnTimer; // Added declaration for current boss spawn timer
+
     std::vector<Enemy*> spawnedEnemies;
-    std::vector<PowerUp*> spawnedPowerUps; // Vector to store spawned power-ups
+    Boss* activeBoss; // Pointer to the active boss
+    std::vector<PowerUp*> spawnedPowerUps;
     int points;
+    int nextBossSpawnScore; // To keep track of the next boss spawn score
 
     void spawn();
-    void spawnPowerUp(); // Function to spawn power-ups
+    void spawnBoss(); // Function to spawn bosses
+    void spawnPowerUp();
     void doSpawnLogic();
     void doCollisionLogic();
     void despawnEnemy(Enemy* enemy);
-    void despawnPowerUp(PowerUp* powerUp); // Function to despawn power-ups
+    void despawnBoss(); // Function to despawn the active boss
+    void despawnPowerUp(PowerUp* powerUp);
 };
-
